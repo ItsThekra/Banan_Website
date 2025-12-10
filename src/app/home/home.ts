@@ -1,84 +1,103 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule],
   templateUrl: './home.html',
   styleUrls: ['./home.css']
 })
-export class HomeComponent {
-
-  serviceName: string = 'خدمة التبصيم في السفارة الألمانية';
-  requestNumber: string = Math.floor(100000 + Math.random() * 900000).toString();
-  countdown: number = 300; // 5 دقائق للداشبورد
-
-  intervalId: any;
-
-  // Pop-up
-  showPopup: boolean = false;
-  popupCountdown: number = 60; // دقيقة واحدة
-  popupInterval: any;
-
-  // بيانات الهوية
+export class HomeComponent implements OnDestroy {
+  // Mock Data
   nationalId: string = '1234567890';
-  fullName: string = 'ذكرى';
-  fingerprintStatus: string = ' مكتمل';
+  fullName: string = 'اسم المستخدم';
+  fingerprintStatus: string = 'بانتظار التحقق';
 
-  constructor() {
-    this.startCountdown();
-  }
+  showPopup: boolean = false;
+  popupCountdown: number = 30; // one sec
+  private popupTimerId: number | null = null;
 
-  startCountdown() {
-    this.intervalId = setInterval(() => {
-      if (this.countdown > 0) {
-        this.countdown--;
-      } else {
-        clearInterval(this.intervalId);
-      }
-    }, 1000);
-  }
+  private mainCountdownSeconds = 300;
+  formattedCountdown: string = this.formatTime(this.mainCountdownSeconds);
+  private mainTimerId: number | null = null;
 
-  get formattedCountdown() {
-    const minutes = Math.floor(this.countdown / 60);
-    const seconds = this.countdown % 60;
-    return `${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
-  }
+  constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef) {}
 
   fingerprintLogin() {
-    this.openFingerprintPopup();
-  }
-
-  openFingerprintPopup() {
+    this.startPopupTimer(30);
     this.showPopup = true;
-    this.popupCountdown = 60;
-
-    this.popupInterval = setInterval(() => {
-      if (this.popupCountdown > 0) {
-        this.popupCountdown--;
-      } else {
-        this.closePopup();
-        alert('تم التبصيم بنجاح ');
-        this.fingerprintStatus = 'مكتمل';
-      }
-    }, 1000);
+    this.fingerprintStatus = 'جارٍ التحقق...';
   }
 
   cancelFingerprint() {
-    this.closePopup();
-    alert('تم إلغاء التبصيم ');
+    this.clearPopupTimer();
+    this.showPopup = false;
+    this.fingerprintStatus = 'ملغاة';
   }
 
   resendFingerprint() {
-    clearInterval(this.popupInterval);
-    this.openFingerprintPopup();
-    alert('تم إعادة إرسال طلب التبصيم ');
+    this.startPopupTimer(30);
+    this.showPopup = true;
+    this.fingerprintStatus = 'جارٍ إعادة المحاولة...';
   }
 
-  closePopup() {
+  private startPopupTimer(seconds: number) {
+    this.clearPopupTimer();
+    this.popupCountdown = seconds;
+
+    this.ngZone.runOutsideAngular(() => {
+      this.popupTimerId = window.setInterval(() => {
+        this.ngZone.run(() => {
+          this.popupCountdown--;
+          if (this.popupCountdown <= 0) {
+            this.onPopupTimeout();
+          }
+          this.cdr.markForCheck();
+        });
+      }, 1000);
+    });
+  }
+
+  private onPopupTimeout() {
+    this.clearPopupTimer();
     this.showPopup = false;
-    clearInterval(this.popupInterval);
+    this.fingerprintStatus = 'انتهت المهلة — لم يتم التحقق';
+  }
+
+  private clearPopupTimer() {
+    if (this.popupTimerId !== null) {
+      window.clearInterval(this.popupTimerId);
+      this.popupTimerId = null;
+    }
+  }
+
+  startMainCountdown() {
+    if (this.mainTimerId) return;
+    this.mainTimerId = window.setInterval(() => {
+      if (this.mainCountdownSeconds > 0) {
+        this.mainCountdownSeconds--;
+        this.formattedCountdown = this.formatTime(this.mainCountdownSeconds);
+
+        this.ngZone.run(() => this.cdr.markForCheck());
+      } else {
+        window.clearInterval(this.mainTimerId!);
+        this.mainTimerId = null;
+      }
+    }, 1000);
+  }
+
+  private formatTime(totalSeconds: number) {
+    const mm = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const ss = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
+  ngOnDestroy(): void {
+    this.clearPopupTimer();
+    if (this.mainTimerId) {
+      window.clearInterval(this.mainTimerId);
+      this.mainTimerId = null;
+    }
   }
 }

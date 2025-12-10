@@ -27,7 +27,7 @@ export class LoginComponent {
 
     this.errorMessage = '';
     Swal.fire({
-      title: "تم تسجيل الدخول بنجاح عبر بنان!",
+      title: "!تم تسجيل الدخول بنجاح عبر بنان",
       icon: "success",
       draggable: true
     });
