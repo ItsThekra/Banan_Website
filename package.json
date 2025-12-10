@@ -35,6 +35,7 @@
     "@tailwindcss/vite": "^4.1.17",
     "express": "^5.1.0",
     "rxjs": "~7.8.0",
+    "sweetalert2": "^11.26.4",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

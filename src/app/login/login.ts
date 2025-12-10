@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
+
 
 @Component({
   selector: 'app-login',
@@ -24,7 +26,11 @@ export class LoginComponent {
     }
 
     this.errorMessage = '';
-    alert('تم تسجيل الدخول بنجاح عبر بنان!');
+    Swal.fire({
+      title: "تم تسجيل الدخول بنجاح عبر بنان!",
+      icon: "success",
+      draggable: true
+    });
     this.router.navigate(['/home']);
   }
 }
