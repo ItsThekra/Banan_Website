@@ -1,3 +1,4 @@
+// ...existing code...
 import { Component, OnDestroy, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -9,13 +10,12 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./home.css']
 })
 export class HomeComponent implements OnDestroy {
-  // Mock Data
-  nationalId: string = '1234567890';
-  fullName: string = 'اسم المستخدم';
+  nationalId: string = '1124963867';
+  fullName: string = 'ذكرى الجغثمي';
   fingerprintStatus: string = 'بانتظار التحقق';
 
   showPopup: boolean = false;
-  popupCountdown: number = 30; // one sec
+  popupCountdown: number = 30; // ثانية
   private popupTimerId: number | null = null;
 
   private mainCountdownSeconds = 300;
@@ -42,6 +42,7 @@ export class HomeComponent implements OnDestroy {
     this.fingerprintStatus = 'جارٍ إعادة المحاولة...';
   }
 
+  // بدء المؤقت للـ popup (عدد ثوانٍ كقيمة)
   private startPopupTimer(seconds: number) {
     this.clearPopupTimer();
     this.popupCountdown = seconds;
@@ -50,13 +51,32 @@ export class HomeComponent implements OnDestroy {
       this.popupTimerId = window.setInterval(() => {
         this.ngZone.run(() => {
           this.popupCountdown--;
+
+          // تم تعديل القيمة: عند وصول العداد إلى الثانية 25 نعتبر التبصيم ناجحاً (simulation)
+          if (this.popupCountdown === 25) {
+            this.onPopupSuccess();
+            return;
+          }
+
           if (this.popupCountdown <= 0) {
             this.onPopupTimeout();
+            return;
           }
+
           this.cdr.markForCheck();
         });
       }, 1000);
     });
+  }
+
+  // تعامل عند نجاح التبصيم (simulation عند 25s)
+  private onPopupSuccess() {
+    this.clearPopupTimer();
+    this.showPopup = false;
+    this.popupCountdown = 0;
+    this.fingerprintStatus = 'تم التبصيم بنجاح';
+    // تحديث العرض داخل Angular zone
+    this.ngZone.run(() => this.cdr.markForCheck());
   }
 
   private onPopupTimeout() {
@@ -93,11 +113,11 @@ export class HomeComponent implements OnDestroy {
     return `${mm}:${ss}`;
   }
 
-  ngOnDestroy(): void {
-    this.clearPopupTimer();
-    if (this.mainTimerId) {
-      window.clearInterval(this.mainTimerId);
-      this.mainTimerId = null;
+    ngOnDestroy(): void {
+      this.clearPopupTimer();
+      if (this.mainTimerId) {
+        window.clearInterval(this.mainTimerId);
+        this.mainTimerId = null;
+      }
     }
   }
-}
